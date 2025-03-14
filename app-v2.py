@@ -41,57 +41,30 @@ def get_connected_users():
     return users
 
 
+# Função para listar usuários cadastrados
+def get_registered_users():
+    if not os.path.exists(USER_CONFIG_FOLDER):
+        return {"error": "Diretório de configurações de usuários não encontrado."}
+
+    users = []
+    for filename in os.listdir(USER_CONFIG_FOLDER):
+        if filename.endswith(".ovpn"):
+            users.append(filename.replace(".ovpn", ""))
+    return users
+
+
 # Rota para listar usuários conectados
-@app.route("/api/users", methods=["GET"])
-def list_users():
+@app.route("/api/connected-users", methods=["GET"])
+def list_connected_users():
     users = get_connected_users()
     return jsonify(users)
 
 
-# Rota para criar um novo usuário
-@app.route("/api/users", methods=["POST"])
-def create_user():
-    username = request.json.get("username")
-    if not username:
-        return jsonify({"error": "Nome de usuário é obrigatório."}), 400
-
-    user_config_path = os.path.join(USER_CONFIG_FOLDER, f"{username}.ovpn")
-    if os.path.exists(user_config_path):
-        return jsonify({"error": "Usuário já existe."}), 400
-
-    with open(OVPN_TEMPLATE, "r") as template:
-        config = template.read().replace("{{username}}", username)
-
-    with open(user_config_path, "w") as config_file:
-        config_file.write(config)
-
-    return jsonify({"success": f"Usuário {username} criado com sucesso."})
-
-
-# Rota para deletar um usuário
-@app.route("/api/users/<username>", methods=["DELETE"])
-def delete_user(username):
-    user_config_path = os.path.join(USER_CONFIG_FOLDER, f"{username}.ovpn")
-    if not os.path.exists(user_config_path):
-        return jsonify({"error": "Usuário não encontrado."}), 404
-
-    os.remove(user_config_path)
-    return jsonify({"success": f"Usuário {username} deletado com sucesso."})
-
-
-# Rota para desconectar um usuário
-@app.route("/api/users/<username>/disconnect", methods=["POST"])
-def disconnect_user(username):
-    result = subprocess.run(
-        ["sudo", "openvpn", "--management", "127.0.0.1", "7505", "kill", username],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-
-    if result.returncode != 0:
-        return jsonify({"error": f"Erro ao desconectar o usuário {username}."}), 400
-
-    return jsonify({"success": f"Usuário {username} desconectado com sucesso."})
+# Rota para listar usuários cadastrados
+@app.route("/api/registered-users", methods=["GET"])
+def list_registered_users():
+    users = get_registered_users()
+    return jsonify(users)
 
 
 # Rota para download do arquivo de configuração
