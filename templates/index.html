@@ -4,87 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administração OpenVPN</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            color: #333;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f0f0f0;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Administração OpenVPN</h1>
-    <h2>Usuários conectados</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Nome Comum</th>
-                <th>Endereço Real</th>
-                <th>Bytes Recebidos</th>
-                <th>Bytes Enviados</th>
-                <th>Conectado Desde</th>
-            </tr>
-        </thead>
-        <tbody id="user-table">
-            <!-- Os dados serão adicionados dinamicamente aqui -->
-        </tbody>
-    </table>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-6 text-center">Administração OpenVPN</h1>
+
+        <!-- Usuários Conectados -->
+        <div class="bg-white shadow p-6 rounded-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Usuários Conectados</h2>
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border border-gray-300 px-4 py-2">Nome</th>
+                        <th class="border border-gray-300 px-4 py-2">Endereço IP</th>
+                        <th class="border border-gray-300 px-4 py-2">Bytes Recebidos</th>
+                        <th class="border border-gray-300 px-4 py-2">Bytes Enviados</th>
+                    </tr>
+                </thead>
+                <tbody id="connected-users">
+                    <!-- Dados dinâmicos -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Usuários Cadastrados -->
+        <div class="bg-white shadow p-6 rounded-lg">
+            <h2 class="text-2xl font-semibold mb-4">Usuários Cadastrados</h2>
+            <div id="pagination-controls" class="mb-4 flex justify-between">
+                <button id="prev-button" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Anterior</button>
+                <button id="next-button" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Próximo</button>
+            </div>
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border border-gray-300 px-4 py-2">Nome</th>
+                        <th class="border border-gray-300 px-4 py-2">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="registered-users">
+                    <!-- Dados dinâmicos -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
-        async function fetchUsers() {
-            try {
-                const response = await fetch('/api/users');
-                const data = await response.json();
+        // Variáveis de paginação
+        let currentPage = 1;
+        const perPage = 5;
 
-                const tableBody = document.getElementById('user-table');
-                tableBody.innerHTML = ''; // Limpa a tabela
+        // Função para carregar usuários conectados
+        async function fetchConnectedUsers() {
+            const response = await fetch("/api/connected-users");
+            const users = await response.json();
 
-                if (data.error) {
-                    tableBody.innerHTML = `<tr><td colspan="5">${data.error}</td></tr>`;
-                    return;
-                }
+            const tableBody = document.getElementById("connected-users");
+            tableBody.innerHTML = "";
 
-                data.forEach(user => {
-                    const row = `
-                        <tr>
-                            <td>${user.common_name}</td>
-                            <td>${user.real_address}</td>
-                            <td>${user.bytes_received}</td>
-                            <td>${user.bytes_sent}</td>
-                            <td>${user.connected_since}</td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-            } catch (error) {
-                console.error('Erro ao buscar usuários:', error);
-                const tableBody = document.getElementById('user-table');
-                tableBody.innerHTML = '<tr><td colspan="5">Erro ao carregar dados.</td></tr>';
+            if (users.error) {
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-2">${users.error}</td></tr>`;
+                return;
             }
+
+            users.forEach(user => {
+                const row = `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${user.common_name}</td>
+                        <td class="border border-gray-300 px-4 py-2">${user.real_address}</td>
+                        <td class="border border-gray-300 px-4 py-2">${user.bytes_received}</td>
+                        <td class="border border-gray-300 px-4 py-2">${user.bytes_sent}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
         }
 
-        // Carrega os usuários ao abrir a página
-        fetchUsers();
+        // Função para carregar usuários cadastrados
+        async function fetchRegisteredUsers() {
+            const response = await fetch(`/api/registered-users?page=${currentPage}&per_page=${perPage}`);
+            const data = await response.json();
+
+            const tableBody = document.getElementById("registered-users");
+            tableBody.innerHTML = "";
+
+            if (data.error) {
+                tableBody.innerHTML = `<tr><td colspan="2" class="text-center py-2">${data.error}</td></tr>`;
+                return;
+            }
+
+            data.users.forEach(user => {
+                const row = `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">${user}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="downloadConfig('${user}')">Download</button>
+                            <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deleteUserConfig('${user}')">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            // Atualizar botões de paginação
+            document.getElementById("prev-button").disabled = currentPage === 1;
+            document.getElementById("next-button").disabled = currentPage * perPage >= data.total;
+        }
+
+        // Função para baixar configuração
+        async function downloadConfig(username) {
+            window.location.href = `/api/users/${username}/download`;
+        }
+
+        // Função para excluir configuração
+        async function deleteUserConfig(username) {
+            const response = await fetch(`/api/users/${username}/delete`, { method: "DELETE" });
+            const result = await response.json();
+            alert(result.success || result.error);
+            fetchRegisteredUsers();
+        }
+
+        // Controle de paginação
+        document.getElementById("prev-button").addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchRegisteredUsers();
+            }
+        });
+
+        document.getElementById("next-button").addEventListener("click", () => {
+            currentPage++;
+            fetchRegisteredUsers();
+        });
+
+        // Inicializar tabelas
+        fetchConnectedUsers();
+        fetchRegisteredUsers();
     </script>
 </body>
 </html>
