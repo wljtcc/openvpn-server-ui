@@ -41,16 +41,23 @@ def get_connected_users():
     return users
 
 
-# Função para listar usuários cadastrados
-def get_registered_users():
+# Função para listar usuários cadastrados com paginação
+def get_registered_users(page, per_page):
     if not os.path.exists(USER_CONFIG_FOLDER):
         return {"error": "Diretório de configurações de usuários não encontrado."}
 
-    users = []
-    for filename in os.listdir(USER_CONFIG_FOLDER):
-        if filename.endswith(".ovpn"):
-            users.append(filename.replace(".ovpn", ""))
-    return users
+    all_users = [f.replace(".ovpn", "") for f in os.listdir(USER_CONFIG_FOLDER) if f.endswith(".ovpn")]
+    total_users = len(all_users)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_users = all_users[start:end]
+
+    return {
+        "users": paginated_users,
+        "total": total_users,
+        "page": page,
+        "per_page": per_page
+    }
 
 
 # Rota para listar usuários conectados
@@ -60,10 +67,16 @@ def list_connected_users():
     return jsonify(users)
 
 
-# Rota para listar usuários cadastrados
+# Rota para listar usuários cadastrados com paginação
 @app.route("/api/registered-users", methods=["GET"])
 def list_registered_users():
-    users = get_registered_users()
+    try:
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 10))
+    except ValueError:
+        return jsonify({"error": "Parâmetros de paginação inválidos."}), 400
+
+    users = get_registered_users(page, per_page)
     return jsonify(users)
 
 

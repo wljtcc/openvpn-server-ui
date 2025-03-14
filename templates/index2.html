@@ -31,6 +31,10 @@
         <!-- Usuários Cadastrados -->
         <div class="bg-white shadow p-6 rounded-lg">
             <h2 class="text-2xl font-semibold mb-4">Usuários Cadastrados</h2>
+            <div id="pagination-controls" class="mb-4 flex justify-between">
+                <button id="prev-button" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Anterior</button>
+                <button id="next-button" class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">Próximo</button>
+            </div>
             <table class="w-full border-collapse border border-gray-300">
                 <thead>
                     <tr class="bg-gray-200">
@@ -46,6 +50,7 @@
     </div>
 
     <script>
+        // Função para carregar usuários conectados
         async function fetchConnectedUsers() {
             const response = await fetch("/api/connected-users");
             const users = await response.json();
@@ -71,19 +76,24 @@
             });
         }
 
+        // Variáveis de paginação
+        let currentPage = 1;
+        const perPage = 10;
+
+        // Função para carregar usuários cadastrados
         async function fetchRegisteredUsers() {
-            const response = await fetch("/api/registered-users");
-            const users = await response.json();
+            const response = await fetch(`/api/registered-users?page=${currentPage}&per_page=${perPage}`);
+            const data = await response.json();
 
             const tableBody = document.getElementById("registered-users");
             tableBody.innerHTML = "";
 
-            if (users.error) {
-                tableBody.innerHTML = `<tr><td colspan="2" class="text-center py-2">${users.error}</td></tr>`;
+            if (data.error) {
+                tableBody.innerHTML = `<tr><td colspan="2" class="text-center py-2">${data.error}</td></tr>`;
                 return;
             }
 
-            users.forEach(user => {
+            data.users.forEach(user => {
                 const row = `
                     <tr>
                         <td class="border border-gray-300 px-4 py-2">${user}</td>
@@ -94,13 +104,31 @@
                 `;
                 tableBody.innerHTML += row;
             });
+
+            // Atualizar botões de paginação
+            document.getElementById("prev-button").disabled = currentPage === 1;
+            document.getElementById("next-button").disabled = currentPage * perPage >= data.total;
         }
 
+        // Função para baixar configuração
         async function downloadConfig(username) {
             window.location.href = `/api/users/${username}/download`;
         }
 
-        // Inicializa as tabelas
+        // Controle de paginação
+        document.getElementById("prev-button").addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchRegisteredUsers();
+            }
+        });
+
+        document.getElementById("next-button").addEventListener("click", () => {
+            currentPage++;
+            fetchRegisteredUsers();
+        });
+
+        // Inicializar tabelas
         fetchConnectedUsers();
         fetchRegisteredUsers();
     </script>
