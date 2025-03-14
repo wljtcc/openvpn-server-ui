@@ -10,7 +10,7 @@ USER_CONFIG_FOLDER = "/opt/openvpn/ovpn/"  # Diretório onde os arquivos de conf
 OVPN_TEMPLATE = "/etc/openvpn/client-template.ovpn"  # Modelo para criação de novos usuários
 
 
-# Função para ler os usuários conectados
+# Função para listar usuários conectados
 def get_connected_users():
     if not os.path.exists(OPENVPN_STATUS_FILE):
         return {"error": "Arquivo de status do OpenVPN não encontrado."}
@@ -55,7 +55,6 @@ def create_user():
     if not username:
         return jsonify({"error": "Nome de usuário é obrigatório."}), 400
 
-    # Gerar arquivo de configuração do usuário
     user_config_path = os.path.join(USER_CONFIG_FOLDER, f"{username}.ovpn")
     if os.path.exists(user_config_path):
         return jsonify({"error": "Usuário já existe."}), 400
@@ -83,7 +82,6 @@ def delete_user(username):
 # Rota para desconectar um usuário
 @app.route("/api/users/<username>/disconnect", methods=["POST"])
 def disconnect_user(username):
-    # Comando OpenVPN para desconectar um usuário
     result = subprocess.run(
         ["sudo", "openvpn", "--management", "127.0.0.1", "7505", "kill", username],
         stdout=subprocess.PIPE,
