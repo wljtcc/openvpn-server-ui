@@ -50,6 +50,10 @@
     </div>
 
     <script>
+        // Variáveis de paginação
+        let currentPage = 1;
+        const perPage = 5;
+
         // Função para carregar usuários conectados
         async function fetchConnectedUsers() {
             const response = await fetch("/api/connected-users");
@@ -76,10 +80,6 @@
             });
         }
 
-        // Variáveis de paginação
-        let currentPage = 1;
-        const perPage = 10;
-
         // Função para carregar usuários cadastrados
         async function fetchRegisteredUsers() {
             const response = await fetch(`/api/registered-users?page=${currentPage}&per_page=${perPage}`);
@@ -99,6 +99,7 @@
                         <td class="border border-gray-300 px-4 py-2">${user}</td>
                         <td class="border border-gray-300 px-4 py-2">
                             <button class="bg-blue-500 text-white px-2 py-1 rounded" onclick="downloadConfig('${user}')">Download</button>
+                            <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="deleteUserConfig('${user}')">Excluir</button>
                         </td>
                     </tr>
                 `;
@@ -113,6 +114,14 @@
         // Função para baixar configuração
         async function downloadConfig(username) {
             window.location.href = `/api/users/${username}/download`;
+        }
+
+        // Função para excluir configuração
+        async function deleteUserConfig(username) {
+            const response = await fetch(`/api/users/${username}/delete`, { method: "DELETE" });
+            const result = await response.json();
+            alert(result.success || result.error);
+            fetchRegisteredUsers();
         }
 
         // Controle de paginação

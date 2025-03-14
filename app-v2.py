@@ -90,6 +90,17 @@ def download_user_config(username):
     return send_file(user_config_path, as_attachment=True)
 
 
+# Rota para excluir o arquivo de configuração de um usuário
+@app.route("/api/users/<username>/delete", methods=["DELETE"])
+def delete_user_config(username):
+    user_config_path = os.path.join(USER_CONFIG_FOLDER, f"{username}.ovpn")
+    if not os.path.exists(user_config_path):
+        return jsonify({"error": "Configuração do usuário não encontrada."}), 404
+
+    os.remove(user_config_path)
+    return jsonify({"success": f"Configuração do usuário {username} excluída com sucesso."})
+
+
 # Rota para o frontend
 @app.route("/")
 def index():
